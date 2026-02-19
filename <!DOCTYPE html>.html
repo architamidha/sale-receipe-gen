@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mise en Place — Smart Recipe Generator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Bricolage+Grotesque:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo"><em>Mise</em>&nbsp;en Place</div>
+    <nav>
+      <button class="nav-btn active" onclick="showPage('search')" id="nav-search">🔍 <span>Discover</span></button>
+      <button class="nav-btn" onclick="showPage('favorites')" id="nav-favorites">♥ <span>Saved</span></button>
+      <button class="nav-btn" onclick="showPage('suggestions')" id="nav-suggestions">✦ <span>For You</span></button>
+    </nav>
+  </header>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- PAGES -->
+  <main>
+
+    <!-- ═══ SEARCH PAGE ═══ -->
+    <div class="page active" id="page-search">
+      <div class="hero">
+        <h1>What's in your <span>kitchen?</span></h1>
+        <p>Add your ingredients and we'll find the perfect recipes — no grocery run needed.</p>
+      </div>
+
+      <div class="search-section">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="switchTab('text-input', this)">✏️ Type Ingredients</button>
+          <button class="tab-btn" onclick="switchTab('image-input', this)">📷 Photo Recognition</button>
+        </div>
+
+        <!-- Text Input Tab -->
+        <div class="tab-content active" id="tab-text-input">
+          <span class="search-label">Add your ingredients</span>
+          <div class="ingredient-input-wrap">
+            <input class="ingredient-input" id="ing-input" type="text"
+              placeholder="e.g. chicken, garlic, lemon…" onkeydown="handleIngKey(event)">
+            <button class="btn-primary" onclick="addIngredient()">+ Add</button>
+            <button class="btn-secondary" onclick="clearIngredients()">Clear</button>
+          </div>
+          <div class="quick-ings" id="quick-ings"></div>
+          <div class="tags-wrap" id="tags-wrap"></div>
+        </div>
+
+        <!-- Image Input Tab -->
+        <div class="tab-content" id="tab-image-input">
+          <label class="upload-zone" id="upload-zone">
+            <input type="file" id="image-file" accept="image/*" onchange="handleImage(event)">
+            <div class="upload-icon">🖼️</div>
+            <p><strong>Drop a photo or click to upload</strong></p>
+            <p>We'll identify the ingredients for you</p>
+            <img id="img-preview" class="image-preview" style="display:none" alt="preview">
+          </label>
+          <div id="ai-status"></div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>Difficulty</label>
+          <select class="filter-select" id="filter-difficulty">
+            <option value="">Any</option>
+            <option>Easy</option>
+            <option>Medium</option>
+            <option>Hard</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Max Time</label>
+          <select class="filter-select" id="filter-time">
+            <option value="">Any</option>
+            <option value="15">≤ 15 min</option>
+            <option value="30">≤ 30 min</option>
+            <option value="60">≤ 60 min</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Cuisine</label>
+          <select class="filter-select" id="filter-cuisine">
+            <option value="">Any</option>
+            <option>Italian</option>
+            <option>Asian</option>
+            <option>Mexican</option>
+            <option>Mediterranean</option>
+            <option>American</option>
+            <option>Indian</option>
+            <option>French</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Dietary</label>
+          <div class="dietary-chips">
+            <span class="chip" onclick="toggleDiet(this)" data-val="vegetarian">🥦 Vegetarian</span>
+            <span class="chip" onclick="toggleDiet(this)" data-val="vegan">🌱 Vegan</span>
+            <span class="chip" onclick="toggleDiet(this)" data-val="gluten-free">🌾 GF</span>
+          </div>
+        </div>
+        <div style="margin-top: auto;">
+          <button class="btn-primary" onclick="findRecipes()" style="margin-top:1.2rem">🔍 Find Recipes</button>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-wrap" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loading-text">Matching recipes…</div>
+      </div>
+
+      <!-- Results -->
+      <div id="results-section" style="display:none">
+        <div class="section-header">
+          <div class="section-title">Recipes Found</div>
+          <div class="result-count" id="result-count"></div>
+        </div>
+        <div class="recipe-grid" id="recipe-grid"></div>
+      </div>
+    </div>
+
+    <!-- ═══ FAVORITES PAGE ═══ -->
+    <div class="page" id="page-favorites">
+      <div class="section-header" style="margin-top:1rem">
+        <div class="section-title">Saved Recipes</div>
+      </div>
+      <div class="recipe-grid" id="favorites-grid"></div>
+      <div class="empty-state" id="fav-empty" style="display:none">
+        <div class="icon">♡</div>
+        <p>No saved recipes yet — discover something delicious!</p>
+      </div>
+    </div>
+
+    <!-- ═══ SUGGESTIONS PAGE ═══ -->
+    <div class="page" id="page-suggestions">
+      <div class="hero" style="padding-top:1.5rem">
+        <h1>Curated <span>for you</span></h1>
+        <p>Based on your ratings and preferences.</p>
+      </div>
+      <div class="recipe-grid" id="suggestions-grid"></div>
+      <div class="empty-state" id="sug-empty" style="display:none">
+        <div class="icon">✦</div>
+        <p>Rate some recipes to get personalized suggestions!</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ═══ MODAL ═══ -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+    <div class="modal" id="modal">
+      <div class="modal-header">
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-cuisine" id="m-cuisine"></div>
+        <div class="modal-title" id="m-title"></div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-meta" id="m-meta"></div>
+
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap">
+          <div>
+            <p style="font-size:0.75rem;color:var(--muted);margin-bottom:0.25rem">Your rating</p>
+            <div class="star-rating" id="m-stars"></div>
+          </div>
+          <div class="serving-wrap">
+            <label>Servings:</label>
+            <button class="serving-btn" onclick="changeServing(-1)">−</button>
+            <span class="serving-num" id="m-serving">4</span>
+            <button class="serving-btn" onclick="changeServing(1)">+</button>
+          </div>
+        </div>
+
+        <div class="modal-section-title">Nutrition (per serving)</div>
+        <div class="nutrition-grid" id="m-nutrition"></div>
+
+        <div class="modal-section-title">Ingredients</div>
+        <ul class="ing-list" id="m-ingredients"></ul>
+
+        <div class="modal-section-title">Substitution Suggestions</div>
+        <div id="m-substitutions"></div>
+
+        <div class="modal-section-title">Instructions</div>
+        <ol class="steps-list" id="m-steps"></ol>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
